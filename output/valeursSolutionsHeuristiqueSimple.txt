@@ -1,0 +1,15 @@
+# Solutions calculées par une heuristique simple en 5s (1min pour les deux denières) 
+# Tout les instances contenant Faisable dans leur nom admettent une solution avec objectif 0
+
+largeurPetiteFaisable: 0
+largeurPetiteOpt: 1
+largeurGrandeFaisable: 3
+largeurGrandeOpt: 31
+petiteFaisable: 0
+petiteOpt: 7
+moyenneFaisable: 3
+moyenneOpt: 44
+grandeFaisable: 32
+grandeOpt: 119
+versaillesFaisable: 507
+versaillesOpt: 1184

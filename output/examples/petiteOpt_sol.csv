@@ -1,0 +1,7 @@
+Objective: 7
+Fenetre, Volet gauche, Volet Droit, Probleme éventuel
+0, 4, 1, volet gauche bloque en bas, volets bloques en largeur
+1, 1, 3, volet gauche bloque en haut, volet droit bloque en haut, 
+2, 2, 4, volets bloques en largeur
+3, 3, 2, volets bloques en largeur
+4, 0, 0, volet gauche bloque en haut, 
