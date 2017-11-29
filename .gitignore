@@ -1,0 +1,5 @@
+bin/
+build/
+*.aux
+*.log
+*.syntex.gz
