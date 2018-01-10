@@ -70,7 +70,7 @@ int nbRabotsFenetre(FenetreAvecVolet const & solution, MapFenetres const & fenet
 		if (verbose) cout << "bloque centre,";
 	}
 	if (verbose) cout << endl;
-	return result;
+    return result;
 }
 
 
@@ -100,20 +100,35 @@ void transposeFenetre(MapSolutions& solutions, int n, int m) {
     solutions[m].indexFenetre = indexFenetre;
 }
 
-int deltaRabot(const FenetreAvecVolet& solution1, const FenetreAvecVolet& solution2, const MapFenetres& fenetres, const MapVolets& gauches, const MapVolets& droits){
-    return nbRabotsFenetre(FenetreAvecVolet(solution1.indexFenetre, solution2.indexVoletGauche, solution1.indexVoletDroit), fenetres, gauches, droits, false)
+int deltaRabotGauche(const FenetreAvecVolet& solution1, const FenetreAvecVolet& solution2, const MapFenetres& fenetres, const MapVolets& gauches, const MapVolets& droits){
+    return (nbRabotsFenetre(FenetreAvecVolet(solution1.indexFenetre, solution2.indexVoletGauche, solution1.indexVoletDroit), fenetres, gauches, droits, false)
           +nbRabotsFenetre(FenetreAvecVolet(solution2.indexFenetre, solution1.indexVoletGauche, solution2.indexVoletDroit), fenetres, gauches, droits, false)
           -nbRabotsFenetre(solution1, fenetres, gauches, droits, false)
-          -nbRabotsFenetre(solution2, fenetres, gauches, droits, false);
+          -nbRabotsFenetre(solution2, fenetres, gauches, droits, false));
+}
+
+int deltaRabotDroit(const FenetreAvecVolet& solution1, const FenetreAvecVolet& solution2, const MapFenetres& fenetres, const MapVolets& gauches, const MapVolets& droits){
+    return (nbRabotsFenetre(FenetreAvecVolet(solution1.indexFenetre, solution1.indexVoletGauche, solution2.indexVoletDroit), fenetres, gauches, droits, false)
+          +nbRabotsFenetre(FenetreAvecVolet(solution2.indexFenetre, solution2.indexVoletGauche, solution1.indexVoletDroit), fenetres, gauches, droits, false)
+          -nbRabotsFenetre(solution1, fenetres, gauches, droits, false)
+          -nbRabotsFenetre(solution2, fenetres, gauches, droits, false));
 }
 
 int main(){
     // ########### Paramètres ############
     bool is_group_instance = false;
-    string instance = "petiteFaisable";
-    int init_time = 10;     // temps d'initialisation en secondes
-    int save_time = 60;     // interval denregistrement de la solution optimale
-    int recuit_times = 10000;
+    // string instance = "petiteFaisable";
+    // string instance = "petiteOpt";
+    string instance = "moyenneFaisable";
+    // string instance = "moyenneOpt";
+    // string instance = "grandeFaisable";
+    // string instance = "grandeOpt";
+    // string instance = "versaillesFaisable";
+    // string instance = "versaillesOpt";
+
+    int init_time = 1;    // temps d'initialisation en secondes
+    // int save_time = 60;     // interval denregistrement de la solution optimale
+    int recuit_time = 60;
     bool verbose = true;
     // ###################################
 
@@ -121,6 +136,8 @@ int main(){
     cout << "Instance : " << instance << (is_group_instance ? " (groupe 4) " : " (common) ") << endl;
     time_t now;
     time(&now);
+    // time_t last_save_time;
+    // time(&last_save_time);
 
     string prefix = is_group_instance ? "group4/" : "common/";
     string fenetresFile = "../input/"+prefix+instance+"_fenetres.csv";
@@ -139,55 +156,99 @@ int main(){
     double T;    // temperature
 
     // initialisation
-    cout << "Initialisations : ";
+    cout << "Initialisation :" << endl;
     for (int i=0; i<fenetres.size(); i++){
         sol_opt[i] = FenetreAvecVolet(i, i, i);
     }
     int eval_opt = evaluateSolution(sol_opt, fenetres, gauches, droits, false);
-    cout << eval_opt << " (init), ";
+    int eval_curr = eval_opt;
+    cout << eval_opt << " (init), " << endl;
     int init_step = 0;
-    while (time(NULL)-now < init_time) {  //  on tire des solutions au hasard
-        vector<int> indicesGauches;
-        for (int i=0; i<N; i++) indicesGauches.push_back(i);
+    vector<int> indicesGauches;
+    for (int i=0; i<N; i++) indicesGauches.push_back(i);
+    vector<int> indicesDroits;
+    for (int i=0; i<N; i++) indicesDroits.push_back(i);
+    while ((int)(time(NULL)-now) < init_time) {  //  on tire des solutions au hasard
         random_shuffle(indicesGauches.begin(), indicesGauches.end());
-        vector<int> indicesDroits;
-        for (int i=0; i<N; i++) indicesDroits.push_back(i);
         random_shuffle(indicesDroits.begin(), indicesDroits.end());
         for (int l=0; l<N; l++) {
             sol_curr[l] = FenetreAvecVolet(l, indicesGauches[l], indicesDroits[l]);
         }
-        int eval_curr = evaluateSolution(sol_curr, fenetres, gauches, droits, false);
+        eval_curr = evaluateSolution(sol_curr, fenetres, gauches, droits, false);
         if (eval_curr < eval_opt) {
             sol_opt = sol_curr;
             eval_opt = eval_curr;
-            cout << eval_curr << " (" << init_step << "e), ";
+            cout << eval_curr << " (" << init_step << " its, " << time(NULL)-now << "s)" << endl;
         }
+
         init_step++;
     }
-    cout << " (sur " << init_step << " essais en " << init_time << " s)" << endl;
+    cout << "Sur " << init_step << " essais en " << init_time << " s" << endl << endl;
+    sol_curr = sol_opt;
+    eval_curr = eval_opt;
+    time(&now);
 
     // Recuit simulé
-    cout << "Recuit simulé : ";
-    for (int k=0; k<recuit_times; k++) {  //  on initialise la solution courrante à la permutation identité
-        T = 1./(1.+k);
-        int n = rand() % N; //  les voisins de notre permutation courante sont distantes d'une transposition (distance dans le groupe symétrique : nb de transpositions entre)
-        int m = rand() % N;
-        int p = rand() % N;
-        int q = rand() % N;
-        double proba = min(1., (double)exp(-deltaRabot(sol_curr[n], sol_curr[m], fenetres, gauches, droits)/T));
+    cout << "Recuit simulé :" << endl;
+    int recuit_step = 0;
+    int n, m, p, q, deltaGauche, deltaDroit, deltaOpt = 0;  // différence de coups de rabot après transposition des volets gauches, des volets droits et depuis la solution optimale
+    double proba;
+    while ((int)(time(NULL)-now) < recuit_time) {
+        T = 1./(1.+0.1*(recuit_step%10000));
+
+        do {
+            n = rand() % N; //  les voisins de notre permutation courante sont distantes d'une transposition (distance dans le groupe symétrique : nb de transpositions entre)
+            m = rand() % N;
+        } while (n == m);
+        deltaGauche = deltaRabotGauche(sol_curr[n], sol_curr[m], fenetres, gauches, droits);
+        proba = (double)min(1., (double)exp(-(double)(deltaGauche/T)));
+        // cout << "deltaGauche : " << deltaGauche << endl;
         if (proba>(double)rand()/RAND_MAX){
-            transposeVoletsDroit(sol_curr, n, m);
-            transposeVoletsGauche(sol_curr, p, q);
-            int eval_curr = evaluateSolution(sol_curr, fenetres, gauches, droits, false);
-            if (eval_curr < eval_opt) {
+            transposeVoletsGauche(sol_curr, n, m);
+            eval_curr += deltaGauche;
+            if (eval_curr-eval_opt < 0) {
                 sol_opt = sol_curr;
                 eval_opt = eval_curr;
-                cout << eval_curr << " (" << k << "e), ";
+                stringstream nbBloquages;
+                nbBloquages << eval_opt;
+                string solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
+                printMapToCsv(sol_opt, solutionsFile);
+                cout << eval_opt << " (" << recuit_step << " its, " << time(NULL)-now << "s) - nouvelle solution optimale" << endl;
+            } else {
+                cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets gauches "<< n << " et " << m << " permutés" << " (T : " << T << ", P : " << proba << ")" << endl;
             }
-            // cout << k << " " << T << " " << proba << endl;
+            // cout << "vrai : " << evaluateSolution(sol_curr, fenetres, gauches, droits, false) << endl;
+            // cout << recuit_step << " " << T << " " << proba << endl;
         }
+        // cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets gauches "<< n << " et " << m << " pas permutés" << endl;
+        do {
+            p = rand() % N;
+            q = rand() % N;
+        } while (p == q);
+        deltaDroit = deltaRabotDroit(sol_curr[p], sol_curr[q], fenetres, gauches, droits);
+        // cout << "deltaDroit : " << deltaDroit << endl;
+        proba = min(1., (double)exp(-(double)(deltaDroit/T)));
+        if (proba>(double)rand()/RAND_MAX){
+            transposeVoletsDroit(sol_curr, p, q);
+            eval_curr += deltaDroit;
+            if (eval_curr-eval_opt < 0) {
+                sol_opt = sol_curr;
+                eval_opt = eval_curr;
+                stringstream nbBloquages;
+                nbBloquages << eval_opt;
+                string solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
+                printMapToCsv(sol_opt, solutionsFile);
+                cout << eval_opt << " (" << recuit_step << " its, " << time(NULL)-now << "s) - nouvelle solution optimale" << endl;
+            } else {
+                cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets droits "<< p << " et " << q << " permutés" << " (T : " << T << ", P : " << proba << ")" << endl;
+            }
+            // cout << "vrai : " << evaluateSolution(sol_curr, fenetres, gauches, droits, false) << endl;
+            // cout << recuit_step << " " << T << " " << proba << endl;
+        }
+        // cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets droits "<< p << " et " << q << " pas permutés" << endl;
+        recuit_step++;
     }
-    cout << " (sur " << recuit_times << " essais)" << endl;
+    cout << " (sur " << recuit_step << " essais en " << recuit_time << " s)" << endl;
 
     stringstream nbBloquages;
     nbBloquages << evaluateSolution(sol_opt, fenetres, gauches, droits, verbose);
