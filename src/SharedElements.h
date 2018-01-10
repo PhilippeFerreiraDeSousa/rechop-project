@@ -116,6 +116,11 @@ public:
 		return result.str();
 	}
 	FenetreAvecVolet(){}
+    FenetreAvecVolet(int idxFenetre, int idxVoletGauche, int idxVoletDroit){
+        indexFenetre = idxFenetre;
+        indexVoletGauche = idxVoletGauche;
+        indexVoletDroit = idxVoletDroit;
+    }
 	FenetreAvecVolet(string description){
 		stringstream read(description);
 		read >> indexFenetre;
@@ -126,22 +131,14 @@ public:
 
 void removeOneSubstring(string& s, string const & p);
 
-// void removeOneSubstring(string& s, string const & p) { 
-//   string::size_type n = p.length();
-//   for (string::size_type i = s.find(p);
-//       i != string::npos;
-//       i = s.find(p))
-//       s.erase(i, n);
-// }
-
-
 template <typename Element>
 void readCsvToMap(map<int,Element> & readMap, string filename){
-	ifstream read(filename.c_str());
-	if (!read.is_open()) throw;
-	string line;
+    ifstream read(filename.c_str());
+    if (!read.is_open()) throw;
+    // cout << filename.c_str() << " read" << endl;
+    string line;
 	getline(read, line); // nbElements
-	getline(read, line); // Description line
+    getline(read, line); // Description line
 	while (getline(read, line)){
 		removeOneSubstring(line, ",");
 
@@ -162,6 +159,7 @@ void printMapToCsv(map<int,Element> printedMap, string filename){
 	for (typename map<int,Element>::iterator it = printedMap.begin(); it!= printedMap.end(); ++it){
 		write << it->second.toString() << endl;
 	}
+    // cout << filename.c_str() << " written" << endl;
 }
 
 #endif

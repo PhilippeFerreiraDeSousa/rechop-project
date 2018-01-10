@@ -1,5 +1,5 @@
-bin/
 build/
+build-src-Desktop-Minimum Size Release/
 *.aux
 *.log
 *.syntex.gz
