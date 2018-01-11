@@ -123,16 +123,16 @@ int main(){
     // string instance = "moyenneOpt";
     // string instance = "grandeFaisable";
     // string instance = "grandeOpt";
-    // string instance = "versaillesFaisable";
-    string instance = "versaillesOpt";
+    string instance = "versaillesFaisable";
+    // string instance = "versaillesOpt";
 
     // string instance = "groupeFaisable-04";
     // string instance = "groupeOpt-04";
 
     int init_time = 1;    // temps d'initialisation en secondes
     // int save_time = 60;     // interval denregistrement de la solution optimale
-    int recuit_time = 1200;
-    int max_stuck_time = 30;     // temps maximum sans amélioration de la solution et sans réchauffement
+    int recuit_time = 360000;
+    int max_stuck_time = 60;     // temps maximum sans amélioration de la solution et sans réchauffement
     bool verbose = false;
     // ###################################
 
@@ -149,8 +149,11 @@ int main(){
     string fenetresFile = "../input/"+prefix+instance+"_fenetres.csv";
     string gauchesFile = "../input/"+prefix+instance+"_voletsDroits.csv";
     string droitsFile = "../input/"+prefix+instance+"_voletsGauches.csv";
-    int score = 834;
-    string solutionsFile = "../output/solutions/"+instance+"_sol/"+score+".csv";
+    int score = 159;
+    stringstream scoreStream;
+    scoreStream << score;
+    string solutionsFile = "../output/solutions/"+instance+"_sol/"+scoreStream.str()+".csv";
+
 	MapFenetres fenetres;
     readCsvToMap<Fenetre>(fenetres, fenetresFile);
 	MapVolets gauches;
@@ -164,7 +167,8 @@ int main(){
     double T;    // temperature
 
     // initialisation
-    readCsvToMap<FenetreAvecVolet>(sol_opt, )
+    readCsvToMap<FenetreAvecVolet>(sol_opt, solutionsFile);
+    int eval_curr, eval_opt = score;
 
 //    cout << "Initialisation :" << endl;
 //    for (int i=0; i<fenetres.size(); i++){
@@ -211,7 +215,7 @@ int main(){
             temp_step = 0;
             temp_stage++;
         }
-        T = 2./(1.+0.001*temp_step+0.3*temp_stage);
+        T = 1./(1.+0.001*temp_step+0.2*temp_stage);     //  T = 0.5/(1.+0.0001*temp_step+0.*temp_stage);
 
         do {
             n = rand() % N; //  les voisins de notre permutation courante sont distantes d'une transposition (distance dans le groupe symétrique : nb de transpositions entre)
