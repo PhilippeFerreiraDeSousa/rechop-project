@@ -12,6 +12,37 @@ typedef map<int, Fenetre> MapFenetres;
 typedef map <int, Volet> MapVolets;
 typedef map<int, FenetreAvecVolet> MapSolutions;
 
+bool is_solution_valid(string instance, string score) {
+    string solutionsFile = "../output/solutions/"+instance+"_sol/"+score+".csv";
+    MapSolutions solution;
+    readCsvToMap<FenetreAvecVolet>(solution, solutionsFile);
+    int N = solution.size();
+    vector<int> idVoletsGauche, idVoletsDroit, idFenetre;
+    for(int i=0; i<N; i++) {
+        if (solution[i].indexVoletGauche >= N || solution[i].indexVoletGauche <0 || solution[i].indexVoletDroit >= N || solution[i].indexVoletDroit<0 || solution[i].indexFenetre >= N || solution[i].indexFenetre<0) {
+            return false;
+        }
+        idVoletsGauche.push_back(solution[i].indexVoletGauche);
+        idVoletsDroit.push_back(solution[i].indexVoletDroit);
+        idFenetre.push_back(solution[i].indexFenetre);
+    }
+    sort(idVoletsGauche.begin(), idVoletsGauche.end());
+    sort(idVoletsDroit.begin(), idVoletsDroit.end());
+    sort(idFenetre.begin(), idFenetre.end());
+    for(int i=0; i<N-1; i++) {
+        if (idVoletsGauche[i] == idVoletsGauche[i+1]) {
+            return false;
+        }
+        if (idVoletsDroit[i] == idVoletsDroit[i+1]) {
+            return false;
+        }
+        if (idFenetre[i] == idFenetre[i+1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 int nbRabotsFenetre(FenetreAvecVolet const & solution, MapFenetres const & fenetres, MapVolets const & gauches, MapVolets const & droits, bool verbose){
 	int result = 0;
     MapFenetres::const_iterator itFen = fenetres.find(solution.indexFenetre);
@@ -114,20 +145,24 @@ int deltaRabotDroit(const FenetreAvecVolet& solution1, const FenetreAvecVolet& s
           -nbRabotsFenetre(solution2, fenetres, gauches, droits, false));
 }
 
+int main0(){
+    cout << is_solution_valid("versaillesOpt", "585") << endl;
+}
+
 int main(){
     // ########### Paramètres ############
     bool is_group_instance = false;
-    // string instance = "petiteFaisable";
-    // string instance = "petiteOpt";
-    // string instance = "moyenneFaisable";
-    // string instance = "moyenneOpt";
-    // string instance = "grandeFaisable";
-    // string instance = "grandeOpt";
-    string instance = "versaillesFaisable";
-    // string instance = "versaillesOpt";
+    // string instance = "petiteFaisable"; int score = 6;
+    // string instance = "petiteOpt";  int score = 8;
+    // string instance = "moyenneFaisable";  int score = 17;
+    // string instance = "moyenneOpt";  int score = 40;
+    // string instance = "grandeFaisable";  int score = 20;
+    // string instance = "grandeOpt";  int score = 98;
+    string instance = "versaillesFaisable";  int score = 159;
+    // string instance = "versaillesOpt";  int score = 584;
 
-    // string instance = "groupeFaisable-04";
-    // string instance = "groupeOpt-04";
+    // string instance = "groupeFaisable-04";  int score = 16;
+    // string instance = "groupeOpt-04";  int score = 96;
 
     int init_time = 1;    // temps d'initialisation en secondes
     // int save_time = 60;     // interval denregistrement de la solution optimale
@@ -149,7 +184,6 @@ int main(){
     string fenetresFile = "../input/"+prefix+instance+"_fenetres.csv";
     string gauchesFile = "../input/"+prefix+instance+"_voletsDroits.csv";
     string droitsFile = "../input/"+prefix+instance+"_voletsGauches.csv";
-    int score = 159;
     stringstream scoreStream;
     scoreStream << score;
     string solutionsFile = "../output/solutions/"+instance+"_sol/"+scoreStream.str()+".csv";
@@ -215,15 +249,18 @@ int main(){
             temp_step = 0;
             temp_stage++;
         }
-        T = 1./(1.+0.001*temp_step+0.2*temp_stage);     //  T = 0.5/(1.+0.0001*temp_step+0.*temp_stage);
+        T = 0.5/(1.+0.001*temp_step+0.2*temp_stage);     //  T = 0.5/(1.+0.0001*temp_step+0.*temp_stage);
 
         do {
             n = rand() % N; //  les voisins de notre permutation courante sont distantes d'une transposition (distance dans le groupe symétrique : nb de transpositions entre)
             m = rand() % N;
         } while (n == m);
         deltaGauche = deltaRabotGauche(sol_curr[n], sol_curr[m], fenetres, gauches, droits);
-        proba = (double)min(1., (double)exp(-(double)(deltaGauche/T)));
-        // cout << "deltaGauche : " << deltaGauche << endl;
+        if (T < 0.001) {
+            proba = (deltaGauche <= 0 ? 1. : 0.);
+        } else {
+            proba =  min(1., (double)exp(-(double)(deltaGauche/T)));
+        }        // cout << "deltaGauche : " << deltaGauche << endl;
         if (proba>(double)rand()/RAND_MAX){
             transposeVoletsGauche(sol_curr, n, m);
             eval_curr += deltaGauche;
@@ -253,7 +290,11 @@ int main(){
         } while (p == q);
         deltaDroit = deltaRabotDroit(sol_curr[p], sol_curr[q], fenetres, gauches, droits);
         // cout << "deltaDroit : " << deltaDroit << endl;
-        proba = min(1., (double)exp(-(double)(deltaDroit/T)));
+        if (T < 0.001) {
+            proba = (deltaDroit <= 0 ? 1. : 0.);
+        } else {
+            proba =  min(1., (double)exp(-(double)(deltaDroit/T)));
+        }
         if (proba>(double)rand()/RAND_MAX){
             transposeVoletsDroit(sol_curr, p, q);
             eval_curr += deltaDroit;
