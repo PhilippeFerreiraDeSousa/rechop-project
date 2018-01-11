@@ -116,7 +116,7 @@ int deltaRabotDroit(const FenetreAvecVolet& solution1, const FenetreAvecVolet& s
 
 int main(){
     // ########### Paramètres ############
-    bool is_group_instance = true;
+    bool is_group_instance = false;
     // string instance = "petiteFaisable";
     // string instance = "petiteOpt";
     // string instance = "moyenneFaisable";
@@ -124,15 +124,15 @@ int main(){
     // string instance = "grandeFaisable";
     // string instance = "grandeOpt";
     // string instance = "versaillesFaisable";
-    // string instance = "versaillesOpt";
+    string instance = "versaillesOpt";
 
-    string instance = "groupeFaisable-04";
+    // string instance = "groupeFaisable-04";
     // string instance = "groupeOpt-04";
 
     int init_time = 1;    // temps d'initialisation en secondes
     // int save_time = 60;     // interval denregistrement de la solution optimale
-    int recuit_time = 120;
-    int max_stuck_time = 10;     // temps maximum sans amélioration de la solution et sans réchauffement
+    int recuit_time = 1200;
+    int max_stuck_time = 30;     // temps maximum sans amélioration de la solution et sans réchauffement
     bool verbose = false;
     // ###################################
 
@@ -149,6 +149,8 @@ int main(){
     string fenetresFile = "../input/"+prefix+instance+"_fenetres.csv";
     string gauchesFile = "../input/"+prefix+instance+"_voletsDroits.csv";
     string droitsFile = "../input/"+prefix+instance+"_voletsGauches.csv";
+    int score = 834;
+    string solutionsFile = "../output/solutions/"+instance+"_sol/"+score+".csv";
 	MapFenetres fenetres;
     readCsvToMap<Fenetre>(fenetres, fenetresFile);
 	MapVolets gauches;
@@ -162,34 +164,36 @@ int main(){
     double T;    // temperature
 
     // initialisation
-    cout << "Initialisation :" << endl;
-    for (int i=0; i<fenetres.size(); i++){
-        sol_opt[i] = FenetreAvecVolet(i, i, i);
-    }
-    int eval_opt = evaluateSolution(sol_opt, fenetres, gauches, droits, false);
-    int eval_curr = eval_opt;
-    cout << eval_opt << " (init), " << endl;
-    int init_step = 0;
-    vector<int> indicesGauches;
-    for (int i=0; i<N; i++) indicesGauches.push_back(i);
-    vector<int> indicesDroits;
-    for (int i=0; i<N; i++) indicesDroits.push_back(i);
-    while ((int)(time(NULL)-now) < init_time) {  //  on tire des solutions au hasard
-        random_shuffle(indicesGauches.begin(), indicesGauches.end());
-        random_shuffle(indicesDroits.begin(), indicesDroits.end());
-        for (int l=0; l<N; l++) {
-            sol_curr[l] = FenetreAvecVolet(l, indicesGauches[l], indicesDroits[l]);
-        }
-        eval_curr = evaluateSolution(sol_curr, fenetres, gauches, droits, false);
-        if (eval_curr < eval_opt) {
-            sol_opt = sol_curr;
-            eval_opt = eval_curr;
-            cout << eval_curr << " (" << init_step << " its, " << time(NULL)-now << "s)" << endl;
-        }
+    readCsvToMap<FenetreAvecVolet>(sol_opt, )
 
-        init_step++;
-    }
-    cout << "Sur " << init_step << " essais en " << init_time << " s" << endl << endl;
+//    cout << "Initialisation :" << endl;
+//    for (int i=0; i<fenetres.size(); i++){
+//        sol_opt[i] = FenetreAvecVolet(i, i, i);
+//    }
+//    int eval_opt = evaluateSolution(sol_opt, fenetres, gauches, droits, false);
+//    int eval_curr = eval_opt;
+//    cout << eval_opt << " (init), " << endl;
+//    int init_step = 0;
+//    vector<int> indicesGauches;
+//    for (int i=0; i<N; i++) indicesGauches.push_back(i);
+//    vector<int> indicesDroits;
+//    for (int i=0; i<N; i++) indicesDroits.push_back(i);
+//    while ((int)(time(NULL)-now) < init_time) {  //  on tire des solutions au hasard
+//        random_shuffle(indicesGauches.begin(), indicesGauches.end());
+//        random_shuffle(indicesDroits.begin(), indicesDroits.end());
+//        for (int l=0; l<N; l++) {
+//            sol_curr[l] = FenetreAvecVolet(l, indicesGauches[l], indicesDroits[l]);
+//        }
+//        eval_curr = evaluateSolution(sol_curr, fenetres, gauches, droits, false);
+//        if (eval_curr < eval_opt) {
+//            sol_opt = sol_curr;
+//            eval_opt = eval_curr;
+//            cout << eval_curr << " (" << init_step << " its, " << time(NULL)-now << "s)" << endl;
+//        }
+
+//        init_step++;
+//    }
+//    cout << "Sur " << init_step << " essais en " << init_time << " s" << endl << endl;
     sol_curr = sol_opt;
     eval_curr = eval_opt;
     time(&now);
@@ -226,7 +230,7 @@ int main(){
                 stuck_value = eval_curr;
                 stringstream nbBloquages;
                 nbBloquages << eval_opt;
-                string solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
+                solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
                 printMapToCsv(sol_opt, solutionsFile);
                 cout << eval_opt << " (" << recuit_step << " its, " << time(NULL)-now << "s) - nouvelle solution optimale" << endl;
             } else if (stuck_value != eval_curr){
@@ -256,7 +260,7 @@ int main(){
                 stuck_value = eval_curr;
                 stringstream nbBloquages;
                 nbBloquages << eval_opt;
-                string solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
+                solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
                 printMapToCsv(sol_opt, solutionsFile);
                 cout << eval_opt << " (" << recuit_step << " its, " << time(NULL)-now << "s) - nouvelle solution optimale" << endl;
             } else if (stuck_value != eval_curr){
@@ -278,7 +282,7 @@ int main(){
 
     stringstream nbBloquages;
     nbBloquages << evaluateSolution(sol_opt, fenetres, gauches, droits, verbose);
-    string solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
+    solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
     printMapToCsv(sol_opt, solutionsFile);
     cout << "Solution in " << solutionsFile << " costs " << nbBloquages.str() << endl;
     // cout << nbBloquages << endl;
