@@ -116,7 +116,7 @@ int deltaRabotDroit(const FenetreAvecVolet& solution1, const FenetreAvecVolet& s
 
 int main(){
     // ########### Paramètres ############
-    bool is_group_instance = false;
+    bool is_group_instance = true;
     // string instance = "petiteFaisable";
     // string instance = "petiteOpt";
     // string instance = "moyenneFaisable";
@@ -124,12 +124,15 @@ int main(){
     // string instance = "grandeFaisable";
     // string instance = "grandeOpt";
     // string instance = "versaillesFaisable";
-    string instance = "versaillesOpt";
+    // string instance = "versaillesOpt";
+
+    string instance = "groupeFaisable-04";
+    // string instance = "groupeOpt-04";
 
     int init_time = 1;    // temps d'initialisation en secondes
     // int save_time = 60;     // interval denregistrement de la solution optimale
-    int recuit_time = 600;
-    int max_stuck_time = 20;     // temps maximum sans amélioration de la solution et sans réchauffement
+    int recuit_time = 120;
+    int max_stuck_time = 10;     // temps maximum sans amélioration de la solution et sans réchauffement
     bool verbose = false;
     // ###################################
 
@@ -259,6 +262,7 @@ int main(){
             } else if (stuck_value != eval_curr){
                 time(&stuck_time);
                 stuck_value = eval_curr;
+                cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s)"<< endl;
             } //else {
                 //cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets droits "<< p << " et " << q << " permutés" << " (T : " << T << ", P : " << proba << ")" << endl;
             //}
