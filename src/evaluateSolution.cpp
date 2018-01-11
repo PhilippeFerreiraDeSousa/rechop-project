@@ -119,23 +119,26 @@ int main(){
     bool is_group_instance = false;
     // string instance = "petiteFaisable";
     // string instance = "petiteOpt";
-    string instance = "moyenneFaisable";
+    // string instance = "moyenneFaisable";
     // string instance = "moyenneOpt";
     // string instance = "grandeFaisable";
     // string instance = "grandeOpt";
     // string instance = "versaillesFaisable";
-    // string instance = "versaillesOpt";
+    string instance = "versaillesOpt";
 
     int init_time = 1;    // temps d'initialisation en secondes
     // int save_time = 60;     // interval denregistrement de la solution optimale
-    int recuit_time = 60;
-    bool verbose = true;
+    int recuit_time = 600;
+    int max_stuck_time = 20;     // temps maximum sans amélioration de la solution et sans réchauffement
+    bool verbose = false;
     // ###################################
 
     srand (time(NULL));
     cout << "Instance : " << instance << (is_group_instance ? " (groupe 4) " : " (common) ") << endl;
     time_t now;
     time(&now);
+    time_t stuck_time;
+    int stuck_value;
     // time_t last_save_time;
     // time(&last_save_time);
 
@@ -187,14 +190,21 @@ int main(){
     sol_curr = sol_opt;
     eval_curr = eval_opt;
     time(&now);
-
+    time(&stuck_time);
     // Recuit simulé
     cout << "Recuit simulé :" << endl;
     int recuit_step = 0;
-    int n, m, p, q, deltaGauche, deltaDroit, deltaOpt = 0;  // différence de coups de rabot après transposition des volets gauches, des volets droits et depuis la solution optimale
+    int temp_step = 0;  // nombres d'itérations du cycle en cours
+    int temp_stage = 0; // nombre de cycles thermiques
+    int n, m, p, q, deltaGauche, deltaDroit;  // différence de coups de rabot après transposition des volets gauches, des volets droits et depuis la solution optimale
     double proba;
     while ((int)(time(NULL)-now) < recuit_time) {
-        T = 1./(1.+0.1*(recuit_step%10000));
+        if ((int)(time(NULL)-stuck_time) > max_stuck_time) {
+            time(&stuck_time);
+            temp_step = 0;
+            temp_stage++;
+        }
+        T = 2./(1.+0.001*temp_step+0.3*temp_stage);
 
         do {
             n = rand() % N; //  les voisins de notre permutation courante sont distantes d'une transposition (distance dans le groupe symétrique : nb de transpositions entre)
@@ -209,14 +219,19 @@ int main(){
             if (eval_curr-eval_opt < 0) {
                 sol_opt = sol_curr;
                 eval_opt = eval_curr;
+                time(&stuck_time);
+                stuck_value = eval_curr;
                 stringstream nbBloquages;
                 nbBloquages << eval_opt;
                 string solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
                 printMapToCsv(sol_opt, solutionsFile);
                 cout << eval_opt << " (" << recuit_step << " its, " << time(NULL)-now << "s) - nouvelle solution optimale" << endl;
-            } else {
-                cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets gauches "<< n << " et " << m << " permutés" << " (T : " << T << ", P : " << proba << ")" << endl;
-            }
+            } else if (stuck_value != eval_curr){
+                time(&stuck_time);
+                stuck_value = eval_curr;
+            } //else {
+                //cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets gauches "<< n << " et " << m << " permutés" << " (T : " << T << ", P : " << proba << ")" << endl;
+            //}
             // cout << "vrai : " << evaluateSolution(sol_curr, fenetres, gauches, droits, false) << endl;
             // cout << recuit_step << " " << T << " " << proba << endl;
         }
@@ -234,21 +249,28 @@ int main(){
             if (eval_curr-eval_opt < 0) {
                 sol_opt = sol_curr;
                 eval_opt = eval_curr;
+                time(&stuck_time);
+                stuck_value = eval_curr;
                 stringstream nbBloquages;
                 nbBloquages << eval_opt;
                 string solutionsFile = "../output/solutions/"+instance+"_sol/"+nbBloquages.str()+".csv";
                 printMapToCsv(sol_opt, solutionsFile);
                 cout << eval_opt << " (" << recuit_step << " its, " << time(NULL)-now << "s) - nouvelle solution optimale" << endl;
-            } else {
-                cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets droits "<< p << " et " << q << " permutés" << " (T : " << T << ", P : " << proba << ")" << endl;
-            }
+            } else if (stuck_value != eval_curr){
+                time(&stuck_time);
+                stuck_value = eval_curr;
+            } //else {
+                //cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets droits "<< p << " et " << q << " permutés" << " (T : " << T << ", P : " << proba << ")" << endl;
+            //}
             // cout << "vrai : " << evaluateSolution(sol_curr, fenetres, gauches, droits, false) << endl;
             // cout << recuit_step << " " << T << " " << proba << endl;
         }
         // cout << eval_curr << " (" << recuit_step << " its, " << time(NULL)-now << "s) - volets droits "<< p << " et " << q << " pas permutés" << endl;
         recuit_step++;
+        temp_step++;
     }
-    cout << " (sur " << recuit_step << " essais en " << recuit_time << " s)" << endl;
+    cout << "Sur " << recuit_step << " essais en " << recuit_time << " s" << endl;
+    cout << "Nombre de cycles thermiques : " << temp_stage << endl;
 
     stringstream nbBloquages;
     nbBloquages << evaluateSolution(sol_opt, fenetres, gauches, droits, verbose);
